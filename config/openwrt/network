@@ -1,0 +1,45 @@
+
+config globals 'globals'
+	option ula_prefix '${LAN_IP6_ULA}'
+	option packet_steering '1'
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ip6assign '60'
+	option ipaddr '${LAN_IP}'
+	option netmask '255.255.255.0'
+#	option gateway '${LAN_GATEWAY}'
+
+config interface 'wan'
+	option device 'br-wan'
+	option proto 'static'
+	option ipaddr ${OPENWRT_LOCAL_IP}
+	option netmask '255.255.255.0'
+	option gateway ${VPN_IP}
+	option peerdns '0'
+
+config interface 'wan6'
+	option proto 'dhcpv6'
+	option device '@wan'
+	option reqaddress 'try'
+	option reqprefix 'auto'
+	option norelease '1'
+	option peerdns '0'
+
+config device
+	option name 'br-wan'
+	option type 'bridge'
+	list ports 'cnt-br0'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth0'
+

@@ -1,0 +1,103 @@
+x-logging:
+    &default-logging
+    driver: "json-file"
+    options:
+        max-size: "10m"
+        max-file: "3"
+
+services:
+  openwrt:
+    image: tgiesela/openwrt
+    build:
+      context: ./openwrt/
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER}
+    hostname: ${CONTAINER}
+    restart: no
+    networks: 
+      ow-lan:
+        ipv4_address: ${LAN_IP}
+        interface_name: eth0
+      vpnnet:
+        interface_name: cnt-br0
+    dns: 127.0.0.1
+    volumes:
+      - /dockerdata/openwrt:/etc/openwrt
+    logging: *default-logging
+    environment:
+      - TZ=${TZ}
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_MODULE
+  vpn:
+    image: tgiesela/nordvpn
+    build: ./nordvpn/
+    container_name: nordvpn
+    # hostname: nordvpn
+    depends_on:
+      - openwrt
+#    network_mode: service:openwrt
+    networks:
+      vpnnet:
+        ipv4_address: ${VPN_IP}
+        interface_name: cnt-br0
+      ow-wan:
+        interface_name: eth1
+    dns: 127.0.0.1
+    environment:
+     - TZ=Europe/Amsterdam
+     - CNTNETWORKPREFIX=${CNTNETWORKPREFIX}
+     - CNTNETWORKMASKLEN=${CNTNETWORKMASKLEN}
+#     - MESHROUTING=${MESHROUTING}
+#     - MESHLOCAL=${MESHLOCAL}
+#     - TOKEN=${TOKEN}
+#     - CNTNETWORK=${CNTNETWORK}
+#     - NORDVPNNICKNAME=${NORDVPNNICKNAME}
+    cap_add:
+     - NET_ADMIN               # Required
+     - NET_RAW                 # Required    networks:
+    volumes:
+     - ${VPNVOLUME}:/var/lib/nordvpn/data/
+    logging: *default-logging
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0  # 1: Recomended if using ipv4 only
+      - net.ipv4.conf.all.src_valid_mark=1
+    devices:
+      - /dev/net/tun
+    restart: on-failure:5
+    healthcheck:
+      test: ["CMD", "/healthy.sh"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  ow-lan:
+    name: ${LAN_NETWORK}
+    driver: ${LAN_DRIVER}
+    ipam:
+      config:
+        - subnet: ${LAN_SUBNET}
+          gateway: 192.168.56.1
+    driver_opts: 
+        parent: ${LAN_PARENT}
+
+  ow-wan:
+    name: ${WAN_NETWORK}
+    driver: ${WAN_DRIVER}
+    driver_opts: 
+      parent: ${WAN_PARENT}
+
+  vpnnet:
+    name: vpnnet
+    driver: bridge
+    # driver_opts:
+    #   com.docker.network.driver.mtu: 1420
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: ${CNTNETWORK}
+          gateway: ${CNTGATEWAY}
+
