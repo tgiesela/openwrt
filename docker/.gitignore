@@ -2,3 +2,5 @@ rootfs.tar.gz
 wireless.conf
 wifi_adapters.conf
 build.target
+# Ignore temporary files and directories
+nordvpn/tmp/*
