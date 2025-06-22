@@ -1,10 +1,9 @@
 make.log
-error.log
-errorvpn.log
+*/error.log
 buildnordvpn
 buildopenwrt
 wifi_adapters.conf
 wireless.conf
 rootfs.tar.gz
-runconfig
-runconfigvpn
+*/runconfig
+

@@ -11,8 +11,8 @@ services:
     build:
       context: ./openwrt/
       dockerfile: Dockerfile
-    container_name: ${CONTAINER}
-    hostname: ${CONTAINER}
+    container_name: ${CONTAINERWRT}
+    hostname: ${CONTAINERWRT}
     restart: no
     networks: 
       ow-lan:

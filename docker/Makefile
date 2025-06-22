@@ -1,8 +1,9 @@
 .PHONY: build clean container createnetwork run removenetworks
 .ONESHELL:
-include ../config/vars
-CNTNETWORKPREFIX:=172.22.0
-CNTNETWORKMASKLEN:=24
+CONFIGDIR:=../config
+GLOBALVARS:=$(CONFIGDIR)/vars
+DOCKERVARS:=$(CONFIGDIR)/dockervars
+include $(GLOBALVARS) $(DOCKERVARS)
 export
 TMPOPENWRT:=openwrt/tmp
 TMPNORDVPN:=nordvpn/tmp
@@ -13,11 +14,11 @@ build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docke
 	@echo "BUILDING SERVICES"
 	docker compose build || exit $$?
 	docker compose create || exit $$?
-	for file in ../config/openwrt/*; do \
+	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
-		docker cp $${file}.mod $(CONTAINER):/etc/config/$$(basename $${file}); \
+		docker cp $${file}.mod $(CONTAINERWRT):/etc/config/$$(basename $${file}); \
 	done
-	rm -rf ../config/openwrt/*.mod
+	rm -rf $(CONFIGDIR)/openwrt/*.mod
 	touch build.target
 
 run: build.target /usr/sbin/iw
@@ -29,7 +30,7 @@ ifeq ($(WIFI_ENABLED),true)
 	./addwifi.sh add
 endif
 
-openwrt/$(OPENWRTIMAGE):../config/vars
+openwrt/$(OPENWRTIMAGE):$(GLOBALVARS)
 	@echo "DOWNLOADING IMAGE $(VERSION) $(ARCH) $(SUBARCH) into $(DOWNLOADNAME)"
 	cd openwrt/
 	wget https://downloads.openwrt.org/releases/$(VERSION)/targets/$(ARCH)/$(SUBARCH)/$(DOWNLOADNAME) -O $(DOWNLOADNAME)
@@ -41,7 +42,7 @@ removecontainer:
 
 stop:
 	docker compose stop || exit $$?
-	rm -rf /run/netns/$(CONTAINER)
+	rm -rf /run/netns/$(CONTAINERWRT)
 ifeq ($(WIFI_ENABLED),true)
 	./addwifi.sh remove
 endif
@@ -52,16 +53,16 @@ clean: stop removecontainer
 	rm -rf $(OPENWRTIMAGE) $(DOWNLOADNAME) $(DOWNLOADNAMEPI4)
 	rm -rf build.target
 	rm -rf $(TMPOPENWRT) $(TMPNORDVPN)
-	# rm -rf /run/netns/$(CONTAINER)
+	# rm -rf /run/netns/$(CONTAINERWRT)
 
 $(TMPNORDVPN):
 	mkdir -p $(TMPNORDVPN)
-	cp ../config/vars $(TMPNORDVPN)/vars
+	cp $(GLOBALVARS) $(TMPNORDVPN)/vars
 	cp ../config/nordvpn/functions.sh $(TMPNORDVPN)/functions.sh
 
 $(TMPOPENWRT):
 	mkdir -p $(TMPOPENWRT)
-	cp ../config/vars $(TMPOPENWRT)/vars
+	cp $(GLOBALVARS) $(TMPOPENWRT)/vars
 
 /usr/sbin/iw:
 	@echo "Installing iw"
