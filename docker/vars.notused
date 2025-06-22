@@ -7,7 +7,7 @@ DOWNLOADNAMEPI4=openwrt-${VERSION}-${ARCH}-${SUBARCH}-rpi-4-ext4-factory.img.gz
 DOWNLOADNAME=openwrt-${VERSION}-${ARCH}-${SUBARCH}-rootfs.tar.gz
 
 BASEIMAGE=rootfs.tar.gz
-CONTAINER=openwrt
+CONTAINERWRT=openwrt
 BUILDIMAGE=tgiesela/openwrt:v0.1
 TZ=Europe/Amsterdam
 

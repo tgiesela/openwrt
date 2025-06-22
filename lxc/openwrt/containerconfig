@@ -34,4 +34,4 @@ lxc.net.0.name = eth0
 lxc.net.2.type = veth
 lxc.net.2.link = lxcbr0
 lxc.net.2.flags = up
-lxc.net.2.name = lxc-br0
+lxc.net.2.name = cnt-br0

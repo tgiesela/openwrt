@@ -7,14 +7,14 @@ function setvar(){
     eval $varname=${!value}
 }
 function checkContainer(){
-    SANDBOXKEY=$(docker inspect ${CONTAINER} --format '{{ .NetworkSettings.SandboxKey }}') 
+    SANDBOXKEY=$(docker inspect ${CONTAINERWRT} --format '{{ .NetworkSettings.SandboxKey }}') 
     if [ -z "${SANDBOXKEY}" ] ; then
-        echo "Container ${CONTAINER} not found or not running."
+        echo "Container ${CONTAINERWRT} not found or not running."
         exit 1
     fi
-    if [ ! -f "/run/netns/${CONTAINER}" ] ; then 
+    if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
         mkdir -p /run/netns
-        ln -s ${SANDBOXKEY} /run/netns/${CONTAINER} 
+        ln -s ${SANDBOXKEY} /run/netns/${CONTAINERWRT} 
     fi
 }
 function addAdapters(){
@@ -26,7 +26,7 @@ function addAdapters(){
         echo ADDING ${adapter}
         DEVINFO=$(udevadm info /sys/class/net/${adapter})
         export WIFI_DEV=$(cat /sys/class/net/${adapter}/phy80211/name) 
-        iw phy ${WIFI_DEV} set netns name ${CONTAINER}
+        iw phy ${WIFI_DEV} set netns name ${CONTAINERWRT}
         echo $adapter-phy=${WIFI_DEV} >> ${STORE}
 
         ISUSB=$(echo ${DEVINFO} | grep 'ID_BUS=usb')
@@ -59,7 +59,7 @@ function addAdapters(){
         export WIFI_RADIO=${counter}
         envsubst < ../config/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
     done
-    docker cp ${WIRELESSCONFIG} ${CONTAINER}:/etc/config/wireless
+    docker cp ${WIRELESSCONFIG} ${CONTAINERWRT}:/etc/config/wireless
 }
 function attemptRename(){
     adapter=$1
@@ -93,7 +93,7 @@ function removeAdapters(){
             fi
         fi
     done
-    rm -rf /run/netns/${CONTAINER}
+    rm -rf /run/netns/${CONTAINERWRT}
 }
 #source vars
 CMD=$1

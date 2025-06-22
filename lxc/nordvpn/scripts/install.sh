@@ -5,8 +5,9 @@ info () {
     echo "[INFO] $*"
 }
 locale-gen
+#dhclient eth1
 apt update
-apt install -y curl
+apt install -y curl tcpdump dnsutils
 
 curl -sSf --output installvpn.sh https://downloads.nordcdn.com/apps/linux/install.sh 
 chmod +x installvpn.sh

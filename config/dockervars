@@ -1,0 +1,3 @@
+#!/bin/bash
+export CNTNETWORKPREFIX=172.22.0
+export CNTNETWORKMASKLEN=24

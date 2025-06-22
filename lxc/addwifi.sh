@@ -7,14 +7,14 @@ function setvar(){
     eval $varname=${!value}
 }
 function checkContainer(){
-    PID=$(lxc-info "${CONTAINER}" openwrt | grep PID: | awk '{print $2;}')
+    PID=$(lxc-info "${CONTAINERWRT}" openwrt | grep PID: | awk '{print $2;}')
     if [ -z "${PID}" ] ; then
-        echo "Container ${CONTAINER} not found or not running."
+        echo "Container ${CONTAINERWRT} not found or not running."
         exit 1
     fi
-    if [ ! -f "/run/netns/${CONTAINER}" ] ; then 
+    if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
         mkdir -p /run/netns
-        ln -s /proc/"${PID}"/ns/net /run/netns/"${CONTAINER}" 
+        ln -s /proc/"${PID}"/ns/net /run/netns/"${CONTAINERWRT}" 
     fi
 }
 function addAdapters(){
@@ -59,7 +59,7 @@ function addAdapters(){
        
         counter=$((counter + 1))
         export WIFI_RADIO=${counter}
-        envsubst < openwrt/config/wireless.tpl >> ${WIRELESSCONFIG}       
+        envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
     done
     cp ${WIRELESSCONFIG} "${CONTAINERROOTFS}"/etc/config/wireless
 }
@@ -95,7 +95,7 @@ function removeAdapters(){
             fi
         fi
     done
-    rm -rf /run/netns/"${CONTAINER}"
+    rm -rf /run/netns/"${CONTAINERWRT}"
 }
 source vars
 CMD=$1

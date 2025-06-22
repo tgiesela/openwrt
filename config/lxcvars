@@ -1,0 +1,9 @@
+#!/bin/sh
+# Note: Needs global variables set in config/vars
+export CNTNETWORKPREFIX=10.0.3
+export CNTNETWORKMASKLEN=24
+export CONTAINERLOC=/var/lib/lxc/
+export CONTAINERROOTFS=${CONTAINERLOC}${CONTAINERWRT}/rootfs
+export CONTAINERVPNROOTFS=${CONTAINERLOC}${CONTAINERVPN}/rootfs
+export CONTAINERCONFIG=./openwrt/containerconfig
+export CONTAINERVPNCONFIG=./nordvpn/containerconfig
