@@ -1,8 +1,10 @@
 .PHONY: build clean stop FORCE
 .ONESHELL:
-CONFIGDIR=../config
-GLOBALVARS=$(CONFIGDIR)/vars
-LXCVARS=$(CONFIGDIR)/lxcvars
+CONFIGDIR  = ../config
+GLOBALVARS = $(CONFIGDIR)/vars
+LXCVARS	   = $(CONFIGDIR)/lxcvars
+NORDVPNVARS= $(CONFIGDIR)/nordvpnvars
+CONT_TYPE  = lxc
 include $(GLOBALVARS) $(LXCVARS)
 export
 
@@ -39,7 +41,7 @@ runopenwrt: openwrt/runconfig $(CONTAINERLOC)$(CONTAINERWRT)
 	@echo "STARTING CONTAINER $(CONTAINERWRT)"
 	ip l set ${LAN_PARENT} promisc on
 	./lxccmd.sh start $(CONTAINERWRT)
-	./addwifi.sh add
+	$(WIFI_SCRIPT) add
 	sleep 10
 	./lxccmd.sh attach $(CONTAINERWRT) "service uhttpd restart"
 
@@ -66,7 +68,7 @@ stop: stopopenwrt stopnordvpn
 
 stopopenwrt:
 	./lxccmd.sh stop $(CONTAINERWRT)
-	./addwifi.sh remove
+	$(WIFI_SCRIPT) remove
 
 stopnordvpn:
 	@echo "DISCONNECTING NORDVPN CONTAINER $(CONTAINERVPN)"
@@ -96,11 +98,12 @@ nordvpn/runconfig: $(GLOBALVARS) $(CONTAINERVPNROOTFS)/home/scripts $(CONTAINERV
 $(CONTAINERVPNROOTFS)/home/scripts: $(GLOBALVARS) $(LXCVARS)
 	@echo "CREATING NORDVPN VARIABLES IN $(CONTAINERVPNROOTFS)/home/scripts"
 	mkdir -p $(CONTAINERVPNROOTFS)/home/scripts/
-	cp $(CONFIGDIR)/nordvpn/functions.sh $(CONTAINERVPNROOTFS)/home/scripts/
+	cp $(CONFIGDIR)/nordvpn/*.sh $(CONTAINERVPNROOTFS)/home/scripts/
 	cp -r nordvpn/scripts/ $(CONTAINERVPNROOTFS)/home/
 	chmod +x $(CONTAINERVPNROOTFS)/home/scripts/*.sh
 	cp $(GLOBALVARS) $(CONTAINERVPNROOTFS)/home/scripts/vars
 	cp $(LXCVARS) $(CONTAINERVPNROOTFS)/home/scripts/lxcvars
+	cp $(NORDVPNVARS) $(CONTAINERVPNROOTFS)/home/scripts/nordvpnvars
 
 $(CONTAINERROOTFS)/etc/config: $(GLOBALVARS) $(LXCVARS)
 	@echo "CREATING CONFIGURATION FILES IN $(CONTAINERROOTFS)/etc/config"
@@ -131,10 +134,19 @@ $(CONTAINERVPNROOTFS):
 
 iptables:
 #	Only run this if you have issues with the iptables rules with docker installed
-	iptables -D  DOCKER-USER -i lxcbr0 -o eth0 -j ACCEPT || true
+	iptables -D  DOCKER-USER -i lxcbr0 -o $(LAN_PARENT) -j ACCEPT || true
 	iptables -D  DOCKER-USER -o lxcbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT || true
-	iptables -t nat -D POSTROUTING -s 10.0.3.0/24 -o eth0 -j MASQUERADE || true
-	iptables -I  DOCKER-USER -i lxcbr0 -o eth0 -j ACCEPT
+	iptables -t nat -D POSTROUTING -s 10.0.3.0/24 -o $(LAN_PARENT) -j MASQUERADE || true
+	iptables -I  DOCKER-USER -i lxcbr0 -o $(LAN_PARENT) -j ACCEPT
 	iptables -I  DOCKER-USER -o lxcbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-	iptables -t nat -I POSTROUTING -s 10.0.3.0/24 -o eth0 -j MASQUERADE
+	iptables -t nat -I POSTROUTING -s 10.0.3.0/24 -o $(LAN_PARENT) -j MASQUERADE
 	iptables -P FORWARD ACCEPT
+
+install:
+	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
+	if [ "$${LINE}" -eq 0 ]; then \
+		(crontab -l; echo "@reboot $(shell pwd)/boot.sh > $(shell pwd)/boot.log") | crontab - ; \
+	fi
+
+uninstall:
+	(crontab -l | sed  '#@reboot $(shell pwd)/boot.sh/d#')|crontab -

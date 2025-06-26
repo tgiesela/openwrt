@@ -11,8 +11,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY tmp/vars /vars
-COPY tmp/functions.sh /functions.sh
+COPY tmp/* /
 COPY --chmod=0755 scripts/init.sh /init.sh
 COPY --chmod=0755 scripts/forward.sh /forward.sh
 COPY --chmod=0755 scripts/healthy.sh /healthy.sh

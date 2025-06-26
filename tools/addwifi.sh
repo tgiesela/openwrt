@@ -7,14 +7,31 @@ function setvar(){
     eval $varname=${!value}
 }
 function checkContainer(){
-    PID=$(lxc-info "${CONTAINERWRT}" openwrt | grep PID: | awk '{print $2;}')
-    if [ -z "${PID}" ] ; then
-        echo "Container ${CONTAINERWRT} not found or not running."
+    if [ "${CONT_TYPE}" == "docker" ] ; then
+        SANDBOXKEY=$(docker inspect ${CONTAINERWRT} --format '{{ .NetworkSettings.SandboxKey }}') 
+        if [ -z "${SANDBOXKEY}" ] ; then
+            echo "Container ${CONTAINERWRT} not found or not running."
+            exit 1
+        fi
+        if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
+            mkdir -p /run/netns
+            ln -s ${SANDBOXKEY} /run/netns/${CONTAINERWRT} 
+        fi
+        return
+    elif [ "${CONT_TYPE}" == "lxc" ] ; then
+        PID=$(lxc-info "${CONTAINERWRT}" openwrt | grep PID: | awk '{print $2;}')
+        if [ -z "${PID}" ] ; then
+            echo "Container ${CONTAINERWRT} not found or not running."
+            exit 1
+        fi
+        if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
+            mkdir -p /run/netns
+            ln -s /proc/"${PID}"/ns/net /run/netns/"${CONTAINERWRT}" 
+        fi
+        return
+    else
+        echo "Unknown container type: ${CONT_TYPE}"
         exit 1
-    fi
-    if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
-        mkdir -p /run/netns
-        ln -s /proc/"${PID}"/ns/net /run/netns/"${CONTAINERWRT}" 
     fi
 }
 function addAdapters(){
@@ -28,7 +45,14 @@ function addAdapters(){
         local WIFI_DEV
         WIFI_DEV=$(cat /sys/class/net/"${adapter}"/phy80211/name)
         export WIFI_DEV
-        iw phy "${WIFI_DEV}" set netns "${PID}"
+        if [ "$CONT_TYPE" == "docker" ] ; then
+            iw phy "${WIFI_DEV}" set netns name "${CONTAINERWRT}"
+        elif [ "$CONT_TYPE" == "lxc" ] ; then
+            iw phy "${WIFI_DEV}" set netns "${PID}"
+        else
+            echo "Unknown container type: ${CONT_TYPE}"
+            exit 1
+        fi
         echo "$adapter"-phy="${WIFI_DEV}" >> ${STORE}
 
         ISUSB=$(echo "${DEVINFO}" | grep 'ID_BUS=usb')
@@ -61,7 +85,14 @@ function addAdapters(){
         export WIFI_RADIO=${counter}
         envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
     done
-    cp ${WIRELESSCONFIG} "${CONTAINERROOTFS}"/etc/config/wireless
+    if [ "${CONT_TYPE}" == "docker" ] ; then
+        docker cp ${WIRELESSCONFIG} "${CONTAINERWRT}":/etc/config/wireless
+    elif [ "${CONT_TYPE}" == "lxc" ] ; then
+        cp ${WIRELESSCONFIG} "${CONTAINERROOTFS}"/etc/config/wireless
+    else
+        echo "Unknown container type: ${CONT_TYPE}"
+        exit 1
+    fi
 }
 function attemptRename(){
     adapter=$1
@@ -97,7 +128,7 @@ function removeAdapters(){
     done
     rm -rf /run/netns/"${CONTAINERWRT}"
 }
-source vars
+#source vars
 CMD=$1
 
 if [[ $CMD == add ]] ; then

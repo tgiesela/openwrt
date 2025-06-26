@@ -7,14 +7,14 @@ function setvar(){
     eval $varname=${!value}
 }
 function checkContainer(){
-    SANDBOXKEY=$(docker inspect ${CONTAINERWRT} --format '{{ .NetworkSettings.SandboxKey }}') 
-    if [ -z "${SANDBOXKEY}" ] ; then
+    PID=$(lxc-info "${CONTAINERWRT}" openwrt | grep PID: | awk '{print $2;}')
+    if [ -z "${PID}" ] ; then
         echo "Container ${CONTAINERWRT} not found or not running."
         exit 1
     fi
     if [ ! -f "/run/netns/${CONTAINERWRT}" ] ; then 
         mkdir -p /run/netns
-        ln -s ${SANDBOXKEY} /run/netns/${CONTAINERWRT} 
+        ln -s /proc/"${PID}"/ns/net /run/netns/"${CONTAINERWRT}" 
     fi
 }
 function addAdapters(){
@@ -23,17 +23,19 @@ function addAdapters(){
     rm -f ${WIRELESSCONFIG}
     export counter=0
     for adapter in ${WIFI_IFACES}; do
-        echo ADDING ${adapter}
-        DEVINFO=$(udevadm info /sys/class/net/${adapter})
-        export WIFI_DEV=$(cat /sys/class/net/${adapter}/phy80211/name) 
-        iw phy ${WIFI_DEV} set netns name ${CONTAINERWRT}
-        echo $adapter-phy=${WIFI_DEV} >> ${STORE}
+        echo ADDING "${adapter}"
+        DEVINFO=$(udevadm info /sys/class/net/"${adapter}")
+        local WIFI_DEV
+        WIFI_DEV=$(cat /sys/class/net/"${adapter}"/phy80211/name)
+        export WIFI_DEV
+        iw phy "${WIFI_DEV}" set netns "${PID}"
+        echo "$adapter"-phy="${WIFI_DEV}" >> ${STORE}
 
-        ISUSB=$(echo ${DEVINFO} | grep 'ID_BUS=usb')
+        ISUSB=$(echo "${DEVINFO}" | grep 'ID_BUS=usb')
         if [ -z "$ISUSB" ] ; then
-            echo ${adapter} is not a USB device
+            echo "${adapter}" is not a USB device
         else
-            while read line; do
+            while read -r line; do
                 if [[ ${line} == *=* ]]; then
                     keyval=$(echo "${line}" | cut -d' ' -f2)
                     key=$(echo "${keyval}" | cut -d'=' -f1)
@@ -45,21 +47,21 @@ function addAdapters(){
                             VENDOR_ID=${value}
                     fi
                 fi
-            done <<< $DEVINFO
-            echo $adapter is USB device $VENDOR_ID:$MODEL_ID
+            done <<< "$DEVINFO"
+            echo "$adapter" is USB device "$VENDOR_ID":"$MODEL_ID"
             echo "$adapter-usbid=$VENDOR_ID $MODEL_ID" >> ${STORE}
         fi
         export WIFI_CHANNEL WIFI_BAND WIFI_SSID WIFI_PASSWORD COUNTRY
-        setvar WIFI_CHANNEL "WIFI_CHANNEL_${adapter}"
-        setvar WIFI_BAND WIFI_BAND_${adapter}
-        setvar WIFI_SSID WIFI_SSID_${adapter}
-        setvar WIFI_PASSWORD WIFI_PASSWORD_${adapter}
+        setvar WIFI_CHANNEL WIFI_CHANNEL_"${adapter}"
+        setvar WIFI_BAND WIFI_BAND_"${adapter}"
+        setvar WIFI_SSID WIFI_SSID_"${adapter}"
+        setvar WIFI_PASSWORD WIFI_PASSWORD_"${adapter}"
        
         counter=$((counter + 1))
         export WIFI_RADIO=${counter}
-        envsubst < ../config/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
+        envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
     done
-    docker cp ${WIRELESSCONFIG} ${CONTAINERWRT}:/etc/config/wireless
+    cp ${WIRELESSCONFIG} "${CONTAINERROOTFS}"/etc/config/wireless
 }
 function attemptRename(){
     adapter=$1
@@ -74,10 +76,10 @@ function attemptRename(){
 }
 function removeAdapters(){
     for adapter in ${WIFI_IFACES}; do
-        echo RETURNING ${adapter}
+        echo RETURNING "${adapter}"
         ISUSB=$(grep "${adapter}-usbid" ${STORE})
-        attemptRename ${adapter}
-        INFO=$(ip l show ${adapter} 2>/dev/null)
+        attemptRename "${adapter}"
+        INFO=$(ip l show "${adapter}" 2>/dev/null)
         if [ ! -z "${INFO}" ] ; then
             echo "Rename to ${adapter} was successful."
         else
@@ -88,12 +90,12 @@ function removeAdapters(){
                     echo "No USB ID found for ${adapter}, skipping usbreset."
                 else
                     echo "Resetting USB device ${VENDOR_ID}:${MODEL_ID}"
-                    usbreset $VENDOR_ID:$MODEL_ID
+                    usbreset "$VENDOR_ID":"$MODEL_ID"
                 fi
             fi
         fi
     done
-    rm -rf /run/netns/${CONTAINERWRT}
+    rm -rf /run/netns/"${CONTAINERWRT}"
 }
 #source vars
 CMD=$1

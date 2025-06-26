@@ -1,14 +1,15 @@
 .PHONY: build clean container createnetwork run removenetworks
 .ONESHELL:
-CONFIGDIR:=../config
-GLOBALVARS:=$(CONFIGDIR)/vars
-DOCKERVARS:=$(CONFIGDIR)/dockervars
+CONFIGDIR  = ../config
+GLOBALVARS = $(CONFIGDIR)/vars
+DOCKERVARS = $(CONFIGDIR)/dockervars
+CONT_TYPE = docker
 include $(GLOBALVARS) $(DOCKERVARS)
 export
 TMPOPENWRT:=openwrt/tmp
 TMPNORDVPN:=nordvpn/tmp
 
-build: build.target
+build: build.target /usr/bin/docker
 
 build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPNORDVPN)
 	@echo "BUILDING SERVICES"
@@ -22,13 +23,15 @@ build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docke
 	touch build.target
 
 run: build.target /usr/sbin/iw
-	@echo "STARTING SERVICES ${LAN_IP}"
+	@echo "STARTING SERVICES"
 	ip l set ${LAN_PARENT} promisc on
 	ip l set ${WAN_PARENT} promisc on
 	docker compose up -d
 ifeq ($(WIFI_ENABLED),true)
-	./addwifi.sh add
+	$(WIFI_SCRIPT) add
 endif
+	sleep 5
+	docker exec -it $(CONTAINERWRT) /bin/sh -c "service uhttpd restart"
 
 openwrt/$(OPENWRTIMAGE):$(GLOBALVARS)
 	@echo "DOWNLOADING IMAGE $(VERSION) $(ARCH) $(SUBARCH) into $(DOWNLOADNAME)"
@@ -44,7 +47,7 @@ stop:
 	docker compose stop || exit $$?
 	rm -rf /run/netns/$(CONTAINERWRT)
 ifeq ($(WIFI_ENABLED),true)
-	./addwifi.sh remove
+	$(WIFI_SCRIPT) remove
 endif
 
 clean: stop removecontainer
@@ -58,7 +61,8 @@ clean: stop removecontainer
 $(TMPNORDVPN):
 	mkdir -p $(TMPNORDVPN)
 	cp $(GLOBALVARS) $(TMPNORDVPN)/vars
-	cp ../config/nordvpn/functions.sh $(TMPNORDVPN)/functions.sh
+	cp $(CONFIGDIR)/nordvpn/*.sh $(TMPNORDVPN)/
+	cp $(CONFIGDIR)/nordvpnvars $(TMPNORDVPN)/
 
 $(TMPOPENWRT):
 	mkdir -p $(TMPOPENWRT)
@@ -67,3 +71,16 @@ $(TMPOPENWRT):
 /usr/sbin/iw:
 	@echo "Installing iw"
 	apt-get update && apt-get install -y iw
+
+/usr/bin/docker:
+	@echo "Installing docker"
+	curl -sSL https://get.docker.com | sh
+
+install:
+	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
+	if [ "$${LINE}" -eq 0 ]; then \
+		(crontab -l; echo "@reboot $(shell pwd)/boot.sh > $(shell pwd)/boot.log") | crontab - ; \
+	fi
+
+uninstall:
+	(crontab -l | sed  '#@reboot $(shell pwd)/boot.sh/d#')|crontab -

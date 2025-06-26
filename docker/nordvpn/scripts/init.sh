@@ -1,6 +1,5 @@
 #!/bin/bash
 . ./functions.sh
-. ./vars
 set -e
 
 appStartDaemon() {
@@ -18,8 +17,9 @@ appStartDaemon() {
     while [ ! -S ${SOCKET} ] ; do
         sleep 1
     done
-    appStart
-
+    info "Starting monitor"
+    chmod +x ./monitor.sh
+    nohup ./monitor.sh > monitor.out 2>&1 & 
 #    tail -f /entrypoint.sh
     wait ${DAEMON_PID}
     echo "Wait completed"

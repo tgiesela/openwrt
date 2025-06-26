@@ -1,3 +1,5 @@
 #!/bin/bash
 export CNTNETWORKPREFIX=172.22.0
 export CNTNETWORKMASKLEN=24
+export LAN_NETWORK=ow-lan
+export WAN_NETWORK=ow-wan

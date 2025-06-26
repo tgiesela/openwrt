@@ -24,7 +24,7 @@ function stop() {
         echo "Container $1 is not running."
         return 0
     fi
-    lxc-stop -n "$1"
+    lxc-stop -k -n "$1"
    	echo "WAITING FOR CONTAINER $1 TO STOP"
 	lxc-wait --name=$1 --state=STOPPED
 	echo "CONTAINER $1 STOPPED"
