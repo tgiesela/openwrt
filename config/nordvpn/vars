@@ -1,7 +1,0 @@
-#!/bin/bash
-export NAME=nordvpn
-export RUN_DIR=/run/$NAME
-export SOCKET=${RUN_DIR}/nordvpnd.sock
-export PID=${RUN_DIR}/nordvpnd.pid
-export DAEMON=/usr/sbin/nordvpnd
-export NORDVPN_GROUP="nordvpn"

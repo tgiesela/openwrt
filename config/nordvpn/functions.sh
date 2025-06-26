@@ -1,12 +1,8 @@
 #!/bin/bash
-
+. ./vars
+. ./nordvpnvars
 set -e
-NAME=nordvpn
-RUN_DIR=/run/$NAME
-SOCKET=${RUN_DIR}/nordvpnd.sock
-PID=${RUN_DIR}/nordvpnd.pid
-DAEMON=/usr/sbin/nordvpnd
-NORDVPN_GROUP="nordvpn"
+
 info () {
     echo "[INFO] $@"
 }
@@ -88,15 +84,31 @@ appStart() {
     nordvpn connect "${COUNTRY}"
     info "CONNECTED"
     nordvpn status
+    nordvpn set ipv6 off # Disable IPv6 to prevent leaks, NordVPN doesn't support it yet
     delDNSrules
     enableForwarding
-    if [ -n "$NORDVPNNICKNAME}" ] ; then
+    if [ -n "${NORDVPNNICKNAME}" ] ; then
         nordvpn mesh peer remove "${NORDVPNNICKNAME}"
-        nordvpn mesh set nickname "${NORDVPNNICKNAME}"
+        nordvpn mesh set nickname "${NORDVPNNICKNAME}" || true
     fi
 }
 appStop() {
     info "Stopping"
     nordvpn logout --persist-token
     nordvpn disconnect
+}
+monitorVpn() {
+    echo "START" > ./wantedstate
+    info "Starting monitor"
+    WANTEDSTATE=$(cat ./wantedstate 2> /dev/null)
+    while [ "${WANTEDSTATE}" != "STOP" ] && [ "$WANTEDSTATE" != "STOPPED" ] ; do
+        if ! nordvpn status | grep -q "Connected"; then
+            echo "NordVPN is not connected, attempting to reconnect..."
+            appStart
+        fi
+        sleep 10
+        WANTEDSTATE=$(cat ./wantedstate 2>/dev/null)
+    done
+    info "Monitor stopped"
+    echo "STOPPED" > ./wantedstate
 }

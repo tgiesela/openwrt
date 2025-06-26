@@ -7,5 +7,7 @@ set -e
 #ip link set dev eth1 down 
 #ip link set dev eth1 up
 #ip route add "${LAN_SUBNET}" via "${OPENWRT_LOCAL_IP}" dev eth0
+
+nohup ./monitor.sh > monitor.out 2>&1 & 
+echo "Starting NordVPN"
 sleep 2
-appStart

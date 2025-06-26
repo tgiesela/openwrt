@@ -5,7 +5,7 @@ info () {
     echo "[INFO] $*"
 }
 locale-gen
-#dhclient eth1
+
 apt update
 apt install -y curl tcpdump dnsutils
 
@@ -27,3 +27,9 @@ UseDomains=true
 [DHCP]
 ClientIdentifier=mac
 EOF
+
+sed /etc/systemd/journald.conf -i \
+    -e 's/^#SystemMaxUse=.*/SystemMaxUse=500M/' \
+    -e 's/^#SystemKeepFree=.*/SystemKeepFree=1G/' \
+    -e 's/^#SystemMaxFileSize=.*/SystemMaxFileSize=100M/'
+systemctl restart systemd-journald.service

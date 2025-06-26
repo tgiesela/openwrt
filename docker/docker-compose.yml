@@ -44,7 +44,7 @@ services:
         interface_name: cnt-br0
       ow-wan:
         interface_name: eth1
-    dns: 127.0.0.1
+    dns: ${OPENWRT_LOCAL_IP}
     environment:
      - TZ=Europe/Amsterdam
      - CNTNETWORKPREFIX=${CNTNETWORKPREFIX}
@@ -95,7 +95,7 @@ networks:
     driver: bridge
     # driver_opts:
     #   com.docker.network.driver.mtu: 1420
-    enable_ipv6: true
+    enable_ipv6: false
     ipam:
       config:
         - subnet: ${CNTNETWORK}
