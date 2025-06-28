@@ -81,7 +81,7 @@ appStart() {
 
     config_mesh
     info "LOGGED IN"
-    nordvpn connect "${COUNTRY}"
+    nordvpn connect "${VPNCONNECT}"
     info "CONNECTED"
     nordvpn status
     nordvpn set ipv6 off # Disable IPv6 to prevent leaks, NordVPN doesn't support it yet

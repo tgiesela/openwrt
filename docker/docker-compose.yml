@@ -49,11 +49,6 @@ services:
      - TZ=Europe/Amsterdam
      - CNTNETWORKPREFIX=${CNTNETWORKPREFIX}
      - CNTNETWORKMASKLEN=${CNTNETWORKMASKLEN}
-#     - MESHROUTING=${MESHROUTING}
-#     - MESHLOCAL=${MESHLOCAL}
-#     - TOKEN=${TOKEN}
-#     - CNTNETWORK=${CNTNETWORK}
-#     - NORDVPNNICKNAME=${NORDVPNNICKNAME}
     cap_add:
      - NET_ADMIN               # Required
      - NET_RAW                 # Required    networks:
@@ -61,7 +56,7 @@ services:
      - ${VPNVOLUME}:/var/lib/nordvpn/data/
     logging: *default-logging
     sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0  # 1: Recomended if using ipv4 only
+      - net.ipv6.conf.all.disable_ipv6=${SYSCTL_IPV6_DISABLED}  
       - net.ipv4.conf.all.src_valid_mark=1
     devices:
       - /dev/net/tun
@@ -95,7 +90,7 @@ networks:
     driver: bridge
     # driver_opts:
     #   com.docker.network.driver.mtu: 1420
-    enable_ipv6: false
+    enable_ipv6: ${IPV6_ENABLED}
     ipam:
       config:
         - subnet: ${CNTNETWORK}

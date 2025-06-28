@@ -13,6 +13,17 @@ build: buildopenwrt buildnordvpn
 buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config stopopenwrt | /usr/bin/lxc-create ipv6
 	@echo "BUILDING IMAGE $(CONTAINERWRT) AND INSTALL ADDITIONAL MODULES"
 
+	sed -i '/sysctl -w net.ipv6.conf/d' $(CONTAINERROOTFS)/etc/rc.local
+	sed -i '/exit 0/d' $(CONTAINERROOTFS)/etc/rc.local
+
+ifeq ($(IPV6_ENABLED),true)
+	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
+	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
+else
+	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
+	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
+endif
+	echo "exit 0" >> $(CONTAINERROOTFS)/etc/rc.local
 	#	Copy configuration files
 	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
@@ -79,6 +90,7 @@ stopnordvpn:
 	apt update && apt install -y lxc
 
 ipv6:
+ifeq ($(IPV6_ENABLED),true)
 	IPV6=$(shell grep LXC_IPV6 /etc/default/lxc-net)
 	if [ -z "$${IPV6}" ] ; then \
 		echo "LXC_IPV6_ADDR=fd80:192:168:56::3" >> /etc/default/lxc-net ; \
@@ -86,6 +98,7 @@ ipv6:
 		echo "LXC_IPV6_NETWORK=fd80:192:168:56::" >> /etc/default/lxc-net ; \
 		echo "LXC_IPV6_NAT=true" >> /etc/default/lxc-net ; \
 	fi
+endif
 
 openwrt/runconfig: $(GLOBALVARS) $(CONTAINERCONFIG)
 	rm -rf $@
