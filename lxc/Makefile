@@ -12,22 +12,29 @@ build: buildopenwrt buildnordvpn
 
 buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config stopopenwrt | /usr/bin/lxc-create ipv6
 	@echo "BUILDING IMAGE $(CONTAINERWRT) AND INSTALL ADDITIONAL MODULES"
+	. $(GLOBALVARS) ; \
+	envsubst <$(CONFIGDIR)/rc.local >rc.local.mod; \
+	cp rc.local.mod $(CONTAINERROOTFS)/etc/rc.local; \
+	rm -f rc.local.mod
+# 	sed -i '/sysctl -w net.ipv6.conf/d' $(CONTAINERROOTFS)/etc/rc.local
+# 	sed -i '/exit 0/d' $(CONTAINERROOTFS)/etc/rc.local
 
-	sed -i '/sysctl -w net.ipv6.conf/d' $(CONTAINERROOTFS)/etc/rc.local
-	sed -i '/exit 0/d' $(CONTAINERROOTFS)/etc/rc.local
-
-ifeq ($(IPV6_ENABLED),true)
-	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
-	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
-else
-	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
-	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
-endif
-	echo "exit 0" >> $(CONTAINERROOTFS)/etc/rc.local
+# ifeq ($(IPV6_ENABLED),true)
+# 	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
+# 	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
+# else
+# 	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
+# 	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
+# endif
+# 	echo "exit 0" >> $(CONTAINERROOTFS)/etc/rc.local
 	#	Copy configuration files
 	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
-		cp $${file}.mod $(CONTAINERROOTFS)/etc/config/$$(basename $${file}); \
+		if [ "$$(basename $${file})" = "wireless.tpl" ] ; then \
+			echo "Skipping template file $${file}"; \
+		else \
+			cp $${file}.mod $(CONTAINERROOTFS)/etc/config/$$(basename $${file}); \
+		fi; \
 	done
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 
@@ -90,15 +97,14 @@ stopnordvpn:
 	apt update && apt install -y lxc
 
 ipv6:
+	sed -i '/LXC_IPV6_/d' /etc/default/lxc-net
 ifeq ($(IPV6_ENABLED),true)
-	IPV6=$(shell grep LXC_IPV6 /etc/default/lxc-net)
-	if [ -z "$${IPV6}" ] ; then \
-		echo "LXC_IPV6_ADDR=fd80:192:168:56::3" >> /etc/default/lxc-net ; \
-		echo "LXC_IPV6_MASK=64" >> /etc/default/lxc-net ; \
-		echo "LXC_IPV6_NETWORK=fd80:192:168:56::" >> /etc/default/lxc-net ; \
-		echo "LXC_IPV6_NAT=true" >> /etc/default/lxc-net ; \
-	fi
+	echo "LXC_IPV6_ADDR=fd80:192:168:56::3" >> /etc/default/lxc-net ; \
+	echo "LXC_IPV6_MASK=64" >> /etc/default/lxc-net ; \
+	echo "LXC_IPV6_NETWORK=fd80:192:168:56::" >> /etc/default/lxc-net ; \
+	echo "LXC_IPV6_NAT=true" >> /etc/default/lxc-net 
 endif
+	service lxc-net restart
 
 openwrt/runconfig: $(GLOBALVARS) $(CONTAINERCONFIG)
 	rm -rf $@

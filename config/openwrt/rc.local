@@ -1,0 +1,8 @@
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+# Enable/disable IPV6 depending on setting of IPV6_ENABLED=${IPV6_ENABLED} and SYSCTL_IPV6_DISABLED=${SYSCTL_IPV6_DISABLED}
+sysctl -w net.ipv6.conf.all.disable_ipv6=${SYSCTL_IPV6_DISABLED}
+sysctl -w net.ipv6.conf.default.disable_ipv6=${SYSCTL_IPV6_DISABLED}
+
+exit 0

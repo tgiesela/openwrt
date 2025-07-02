@@ -18,8 +18,8 @@ config dhcp 'lan'
     option limit '150'
     option leasetime '12h'
     option dhcpv4 'server'
-    option dhcpv6 'server'
-    option ra 'server'
+    option dhcpv6 '${DHCPV6_MODE}'
+    option ra '${DHCPV6_MODE}'
     option ra_flags 'managed-config'
     option ra_flags 'other-config'
     list dhcp_option 'option:ntp-server,${LAN_IP}'
@@ -41,9 +41,13 @@ config odhcpd 'odhcpd'
     option loglevel '4'
 
 config domain
-        option name 'nordvpn'
-        option ip '${VPN_IP}'
+    option name 'nordvpn'
+    option ip '${VPN_IP}'
 
 config domain
-        option name 'openwrt'
-        option ip '${LAN_IP}'
+    option name 'openwrt'
+    option ip '${LAN_IP}'
+
+config domain
+    option name 'tvhome'
+    option ip '${VPN_BYPASS_IP}'

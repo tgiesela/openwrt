@@ -27,7 +27,7 @@ ip addr add "${OPENWRT_LOCAL_IP}/${CNTNETWORKMASKLEN}" dev cnt-br0
 ip route add default via "${CNTGATEWAY}"
 # Update the package list and upgrade all packages
 opkg update 
-#opkg list-upgradable | awk '{print $1}' | xargs opkg upgrade || true
 opkg install nano bash tcpdump curl kmod-mac80211 iwinfo kmod-wireguard luci-proto-wireguard wireguard-tools usbutils hostapd
+opkg install pbr luci-app-pbr
 sed -i "s/^nameserver ${UPSTREAM_DNS_SERVER}/nameserver 127.0.0.1/" /etc/resolv.conf
 

@@ -26,6 +26,18 @@ lxc.net.0.flags = up
 lxc.net.0.link = ${LAN_PARENT}
 lxc.net.0.name = eth0
 
+#
+#   Wan side without vpn!
+#
+lxc.net.1.type = ${WAN_DRIVER}
+lxc.net.1.macvlan.mode = bridge
+lxc.net.1.link = ${WAN_PARENT}
+lxc.net.1.name = eth1
+lxc.net.1.flags = up
+
+#
+#   Output Container bridge (fake WAN)
+#
 lxc.net.2.type = veth
 lxc.net.2.link = lxcbr0
 lxc.net.2.flags = up
