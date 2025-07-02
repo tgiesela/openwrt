@@ -30,20 +30,21 @@ services:
       - NET_ADMIN
       - NET_RAW
       - SYS_MODULE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=${SYSCTL_IPV6_DISABLED}
+      - net.ipv6.conf.default.disable_ipv6=${SYSCTL_IPV6_DISABLED}
   vpn:
     image: tgiesela/nordvpn
     build: ./nordvpn/
     container_name: nordvpn
-    # hostname: nordvpn
+    hostname: nordvpn
     depends_on:
       - openwrt
-#    network_mode: service:openwrt
     networks:
       vpnnet:
         ipv4_address: ${VPN_IP}
         interface_name: cnt-br0
       ow-wan:
-        interface_name: eth1
     dns: ${OPENWRT_LOCAL_IP}
     environment:
      - TZ=Europe/Amsterdam
@@ -72,6 +73,7 @@ networks:
   ow-lan:
     name: ${LAN_NETWORK}
     driver: ${LAN_DRIVER}
+    enable_ipv6: ${IPV6_ENABLED}
     ipam:
       config:
         - subnet: ${LAN_SUBNET}
@@ -82,6 +84,7 @@ networks:
   ow-wan:
     name: ${WAN_NETWORK}
     driver: ${WAN_DRIVER}
+    enable_ipv6: ${IPV6_ENABLED}
     driver_opts: 
       parent: ${WAN_PARENT}
 

@@ -12,7 +12,6 @@ config zone
 	option forward 'ACCEPT'
 	option masq '1'
 	list network 'lan'
-	list network 'docker'
 
 config zone
 	option name 'wan'
@@ -23,6 +22,7 @@ config zone
 	option mtu_fix '1'
 	list network 'wan'
 	list network 'wan6'
+	list network 'novpn'
 
 config forwarding
 	option src 'lan'

@@ -68,7 +68,7 @@ appStart() {
     while [ ! -S ${SOCKET} ] ; do
         sleep 1
     done
-
+    nordvpn set analytics off # Disable analytics to prevent leaks
     nordvpn logout --persist-token
     echo "LOGGING IN"
     nordvpn login --token "${TOKEN}"

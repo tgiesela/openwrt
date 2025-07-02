@@ -1,10 +1,11 @@
 .PHONY: build clean container createnetwork run removenetworks
 .ONESHELL:
 CONFIGDIR  = ../config
-GLOBALVARS = $(CONFIGDIR)/vars
 DOCKERVARS = $(CONFIGDIR)/dockervars
+GLOBALVARS = $(CONFIGDIR)/vars
 CONT_TYPE = docker
-include $(GLOBALVARS) $(DOCKERVARS)
+include $(DOCKERVARS) 
+include $(GLOBALVARS) 
 export
 TMPOPENWRT:=openwrt/tmp
 TMPNORDVPN:=nordvpn/tmp
@@ -12,12 +13,17 @@ TMPNORDVPN:=nordvpn/tmp
 build: build.target /usr/bin/docker
 
 build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPNORDVPN)
-	@echo "BUILDING SERVICES"
+	@echo "BUILDING SERVICES SYSCTL_IPV6_DISABLED=$(SYSCTL_IPV6_DISABLED) IPV6_ENABLED=${IPV6_ENABLED}"
 	docker compose build || exit $$?
 	docker compose create || exit $$?
+	. $(GLOBALVARS) ; \
 	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
-		docker cp $${file}.mod $(CONTAINERWRT):/etc/config/$$(basename $${file}); \
+		if [ "$$(basename $${file})" = "wireless.tpl" ] ; then \
+			echo "Skipping template file $${file}"; \
+		else \
+			docker cp $${file}.mod $(CONTAINERWRT):/etc/config/$$(basename $${file}); \
+		fi; \
 	done
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 	touch build.target
@@ -27,10 +33,12 @@ run: build.target /usr/sbin/iw
 	ip l set ${LAN_PARENT} promisc on
 	ip l set ${WAN_PARENT} promisc on
 	docker compose up -d
+#	docker exec -it $(CONTAINERWRT) /bin/sh -c "/etc/init.d/pbr enable"
 ifeq ($(WIFI_ENABLED),true)
 	$(WIFI_SCRIPT) add
 endif
-	sleep 5
+	sleep 8
+	docker network connect ${WAN_NETWORK} $(CONTAINERWRT)
 	docker exec -it $(CONTAINERWRT) /bin/sh -c "service uhttpd restart"
 
 openwrt/$(OPENWRTIMAGE):$(GLOBALVARS)
@@ -56,7 +64,8 @@ clean: stop removecontainer
 	rm -rf $(OPENWRTIMAGE) $(DOWNLOADNAME) $(DOWNLOADNAMEPI4)
 	rm -rf build.target
 	rm -rf $(TMPOPENWRT) $(TMPNORDVPN)
-	# rm -rf /run/netns/$(CONTAINERWRT)
+	docker rmi tgiesela/openwrt:latest || true
+	docker rmi tgiesela/nordvpn:latest || true
 
 $(TMPNORDVPN):
 	mkdir -p $(TMPNORDVPN)
