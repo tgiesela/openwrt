@@ -1,0 +1,14 @@
+#!/bin/bash
+export NAME=nordvpn
+export RUN_DIR=/run/$NAME
+export SOCKET=${RUN_DIR}/nordvpnd.sock
+export PID=${RUN_DIR}/nordvpnd.pid
+export DAEMON=/usr/sbin/nordvpnd
+export NORDVPN_GROUP="nordvpn"
+
+export MESHROUTING="<userid>-pyrenees.nord;<userid>-himalayas.nord"
+export MESHLOCAL="<userid>-pyrenees.nord;<userid>-himalayas.nord"
+export TOKEN="<your token>"
+export NORDVPNNICKNAME=nickname
+# Can be COUNTRY(NL), CITY(Amsterdam), SERVER(nl982.nordvpn.com), COUNTRY-CODE (528)
+export VPNCONNECT=NL
