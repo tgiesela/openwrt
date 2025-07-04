@@ -14,7 +14,12 @@ Then I decided to run Openwrt and Nordvpn in containers, e.g. lxc or docker. Bec
 You can choose to run the docker version or the lxc version.
 
 ## Configuration
-There are several configuration files:
+There are several configuration files. Copy the following files:
+
+    cp vars.example vars
+    cp nordvpnvars.example nordvpnvars
+
+Change the secret values between <> in these files. And adjust other parameters to your needs.
 
 `dockervars`
 Adjust these variables if the defaults do not apply. Not used in lxc containers.

@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+#   LXC config settings for OpenWrt and NordVPN container
+#
+LANGUAGE=en_US.UTF-8
+#export LC_ALL=en_US.UTF-8
+LANG=en_US.UTF-8
+#export LC_CTYPE=en_US.UTF-8
+
+export CONTAINERWRT=openwrt
+export CONTAINERVPN=nordvpn
+export TZ=Europe/Amsterdam
+
+# Set to wanted LAN prefix
+export LAN_PREFIX=192.168.1
+export LAN_MASK=24
+#
+# OpenWrt build settings
+#
+export VERSION=24.10.1
+export ARCH=armsr
+export SUBARCH=armv8
+export LXCARCH=arm64
+# export ARCH=x86
+# export SUBARCH=64
+# export LXCARCH=amd64
+export OPENWRTIMAGE=rootfs.tar.gz
+export DOWNLOADNAME=openwrt-${VERSION}-${ARCH}-${SUBARCH}-${OPENWRTIMAGE}
+
+#
+# OpenWrt container settings
+#
+# Set to true if nordvpn supports IPv6, currently it does not
+export IPV6_ENABLED=false
+export SYSCTL_IPV6_DISABLED=$( [ "$IPV6_ENABLED" = "true" ] &&  echo 0 || echo  1)
+export OPENWRT_IPV6_ENABLED=$( [ "$IPV6_ENABLED" = "true" ] &&  echo 1 || echo  0)
+export DHCPV6_MODE=$( [ "$IPV6_ENABLED" = "true" ] &&  echo server || echo disabled)
+export DHCP_ENABLED=true
+export LAN_DOMAIN=example.local
+export UPSTREAM_DNS_SERVER=8.8.8.8
+
+export OPENWRT_LOCAL_IP=${CNTNETWORKPREFIX}.49
+export OPENWRT_LOCAL_GATEWAY=${CNTNETWORKPREFIX}.50
+export LAN_IP6_ULA=$( [ "$IPV6_ENABLED" = "true" ] &&  echo 'fd00:192:168:56::1/64' || echo  '')
+
+export LAN_DRIVER=macvlan
+export LAN_PARENT=eth0
+export LAN_SUBNET=${LAN_PREFIX}.0/${LAN_MASK}
+export LAN_IP=${LAN_PREFIX}.3
+export LAN_GATEWAY=${LAN_PREFIX}.3
+
+export WAN_DRIVER=macvlan
+export WAN_PARENT=eth1
+
+export WIFI_ENABLED=true
+
+#WIFI_IFACES="wlan0 wlan1"
+export WIFI_IFACES=wlan0
+export WIFI_CHANNEL_wlan0=48
+export WIFI_SSID_wlan0=<your_wifi_ssid>
+export WIFI_PASSWORD_wlan0=<your_wifi_password>
+export WIFI_BAND_wlan0=5G
+
+export WIFI_CHANNEL_wlan1=1
+export WIFI_SSID_wlan1=<your_wifi_ssid>
+export WIFI_PASSWORD_wlan1=<your_wifi_password>
+export WIFI_BAND_wlan1=2G
+
+# Note CNTxxx variables will be set in Makefile
+export VPN_IP=${CNTNETWORKPREFIX}.50
+export CNTNETWORKIP=${CNTNETWORKPREFIX}.0
+export CNTGATEWAY=${CNTNETWORKPREFIX}.1
+export CNTNETWORK=${CNTNETWORKIP}/${CNTNETWORKMASKLEN}
+export LOCALNETWORKS="${CNTNETWORK};${LAN_SUBNET}"
+
+export VPNVOLUME=/dockerdata/nordvpn
+
+export WIFI_SCRIPT=../tools/addwifi.sh
+# Example to bypass VPN for a specific IP
+export VPN_BYPASS_IP=${LAN_PREFIX}.159
