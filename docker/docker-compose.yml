@@ -14,6 +14,8 @@ services:
     container_name: ${CONTAINERWRT}
     hostname: ${CONTAINERWRT}
     restart: no
+    depends_on:
+      - vpn
     networks: 
       ow-lan:
         ipv4_address: ${LAN_IP}
@@ -38,8 +40,7 @@ services:
     build: ./nordvpn/
     container_name: nordvpn
     hostname: nordvpn
-    depends_on:
-      - openwrt
+    restart: no
     networks:
       vpnnet:
         ipv4_address: ${VPN_IP}
@@ -61,7 +62,6 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     devices:
       - /dev/net/tun
-    restart: on-failure:5
     healthcheck:
       test: ["CMD", "/healthy.sh"]
       interval: 5s
@@ -77,7 +77,7 @@ networks:
     ipam:
       config:
         - subnet: ${LAN_SUBNET}
-          gateway: 192.168.56.1
+          gateway: ${LAN_PREFIX}.1
     driver_opts: 
         parent: ${LAN_PARENT}
 
