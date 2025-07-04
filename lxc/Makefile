@@ -164,8 +164,9 @@ iptables:
 install:
 	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
 	if [ "$${LINE}" -eq 0 ]; then \
-		(crontab -l; echo "@reboot $(shell pwd)/boot.sh > $(shell pwd)/boot.log") | crontab - ; \
+		(crontab -l; echo "@reboot cd $(shell pwd) && ./boot.sh > ./boot.log") | crontab - ; \
 	fi
+	chmod +x $(shell pwd)/boot.sh
 
 uninstall:
-	(crontab -l | sed  '#@reboot $(shell pwd)/boot.sh/d#')|crontab -
+	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -

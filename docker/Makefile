@@ -37,9 +37,17 @@ run: build.target /usr/sbin/iw
 ifeq ($(WIFI_ENABLED),true)
 	$(WIFI_SCRIPT) add
 endif
-	sleep 8
+	sleep 10
 	docker network connect ${WAN_NETWORK} $(CONTAINERWRT)
-	docker exec -it $(CONTAINERWRT) /bin/sh -c "service uhttpd restart"
+	RSLT=$$(docker exec $(CONTAINERWRT) /bin/sh -c "netstat -lnp|grep $(LAN_IP):80"); \
+	while [ -z "$$RSLT" ]; do \
+		echo "Waiting for uhttpd to start..."; \
+		sleep 1; \
+		docker exec $(CONTAINERWRT) /bin/sh -c "service uhttpd restart"; \
+		RSLT=$$(docker exec $(CONTAINERWRT) /bin/sh -c "netstat -lnp|grep $(LAN_IP):80"); \
+	done
+
+# sleep 8
 
 openwrt/$(OPENWRTIMAGE):$(GLOBALVARS)
 	@echo "DOWNLOADING IMAGE $(VERSION) $(ARCH) $(SUBARCH) into $(DOWNLOADNAME)"
@@ -88,8 +96,9 @@ $(TMPOPENWRT):
 install:
 	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
 	if [ "$${LINE}" -eq 0 ]; then \
-		(crontab -l; echo "@reboot $(shell pwd)/boot.sh > $(shell pwd)/boot.log") | crontab - ; \
+		(crontab -l; echo "@reboot cd $(shell pwd) && ./boot.sh > ./boot.log") | crontab - ; \
 	fi
+	chmod +x $(shell pwd)/boot.sh
 
 uninstall:
-	(crontab -l | sed  '#@reboot $(shell pwd)/boot.sh/d#')|crontab -
+	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -
