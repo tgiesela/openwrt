@@ -1,8 +1,10 @@
 
 config uhttpd 'main'
 	list listen_http '${LAN_IP}:80'
+	list listen_http '${OPENWRT_LOCAL_IP}:80'
 	list listen_http '[::]:80'
 	list listen_https '${LAN_IP}:443'
+	list listen_https '${OPENWRT_LOCAL_IP}:443'
 	list listen_https '[::]:443'
 	option redirect_https '0'
 	option home '/www'

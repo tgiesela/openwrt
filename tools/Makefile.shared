@@ -1,0 +1,17 @@
+$(ADGUARDVARS):
+	@echo "Generating adGuard user-id password"
+	apt update && apt install -y apache2-utils
+	RSLT='$(shell htpasswd -B -C 10 -n -b admin admin)'; \
+	PASSWD=`echo $${RSLT}| awk '{ split($$0,a,":");print a[2];}'`; \
+	sed 'd/ADGUARDENCODEDPASSWD/' ${ADGUARDVARS}
+	echo export ADGUARDENCODEDPASSWD="'$${PASSWD}'" >> $(ADGUARDVARS); 
+
+install:
+	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
+	if [ "$${LINE}" -eq 0 ]; then \
+		(crontab -l; echo "@reboot cd $(shell pwd) && ./boot.sh > ./boot.log") | crontab - ; \
+	fi
+	chmod +x $(shell pwd)/boot.sh
+
+uninstall:
+	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -

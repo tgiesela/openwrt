@@ -28,6 +28,6 @@ ip route add default via "${CNTGATEWAY}"
 # Update the package list and upgrade all packages
 opkg update 
 opkg install nano bash tcpdump curl kmod-mac80211 iwinfo kmod-wireguard luci-proto-wireguard wireguard-tools usbutils hostapd
-opkg install pbr luci-app-pbr
+opkg install pbr luci-app-pbr adguardhome
 sed -i "s/^nameserver ${UPSTREAM_DNS_SERVER}/nameserver 127.0.0.1/" /etc/resolv.conf
 

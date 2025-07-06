@@ -3,28 +3,40 @@
 CONFIGDIR  = ../config
 DOCKERVARS = $(CONFIGDIR)/dockervars
 GLOBALVARS = $(CONFIGDIR)/vars
+ADGUARDVARS = $(CONFIGDIR)/adguardvars
 CONT_TYPE = docker
+include ../tools/Makefile.shared
 include $(DOCKERVARS) 
-include $(GLOBALVARS) 
+include $(GLOBALVARS)
+include $(ADGUARDVARS)
 export
 TMPOPENWRT:=openwrt/tmp
 TMPNORDVPN:=nordvpn/tmp
 
 build: build.target /usr/bin/docker
 
-build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPNORDVPN)
-	@echo "BUILDING SERVICES SYSCTL_IPV6_DISABLED=$(SYSCTL_IPV6_DISABLED) IPV6_ENABLED=${IPV6_ENABLED}"
+build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPNORDVPN) | $(ADGUARDVARS)
+	@echo "BUILDING SERVICES"
 	docker compose build || exit $$?
 	docker compose create || exit $$?
 	. $(GLOBALVARS) ; \
+	. $(ADGUARDVARS) ; \
 	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
 		if [ "$$(basename $${file})" = "wireless.tpl" ] ; then \
 			echo "Skipping template file $${file}"; \
+		elif [ "$$(basename $${file})" = "rc.local" ] ; then \
+			echo "Skipping rc.local"; \
 		else \
 			docker cp $${file}.mod $(CONTAINERWRT):/etc/config/$$(basename $${file}); \
 		fi; \
-	done
+	done;
+
+	ADGUARDCONF=$(CONFIGDIR)/adguard/adguardhome.yaml; \
+	envsubst <$${ADGUARDCONF} >$${ADGUARDCONF}.mod; \
+	docker cp $${ADGUARDCONF}.mod $(CONTAINERWRT):/etc/$$(basename $${ADGUARDCONF}); 
+
+	rm -f $${ADGUARDCONF}.mod
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 	touch build.target
 
@@ -60,6 +72,7 @@ removecontainer:
 	docker compose down
 
 stop:
+	docker network disconnect ${WAN_NETWORK} $(CONTAINERWRT)
 	docker compose stop || exit $$?
 	rm -rf /run/netns/$(CONTAINERWRT)
 ifeq ($(WIFI_ENABLED),true)
@@ -77,13 +90,13 @@ clean: stop removecontainer
 
 $(TMPNORDVPN):
 	mkdir -p $(TMPNORDVPN)
-	cp $(GLOBALVARS) $(TMPNORDVPN)/vars
-	cp $(CONFIGDIR)/nordvpn/*.sh $(TMPNORDVPN)/
-	cp $(CONFIGDIR)/nordvpnvars $(TMPNORDVPN)/
+	cp -p $(GLOBALVARS) $(TMPNORDVPN)/vars
+	cp -p $(CONFIGDIR)/nordvpn/*.sh $(TMPNORDVPN)/
+	cp -p $(CONFIGDIR)/nordvpnvars $(TMPNORDVPN)/
 
 $(TMPOPENWRT):
 	mkdir -p $(TMPOPENWRT)
-	cp $(GLOBALVARS) $(TMPOPENWRT)/vars
+	cp -p $(GLOBALVARS) $(TMPOPENWRT)/vars
 
 /usr/sbin/iw:
 	@echo "Installing iw"
@@ -92,13 +105,3 @@ $(TMPOPENWRT):
 /usr/bin/docker:
 	@echo "Installing docker"
 	curl -sSL https://get.docker.com | sh
-
-install:
-	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
-	if [ "$${LINE}" -eq 0 ]; then \
-		(crontab -l; echo "@reboot cd $(shell pwd) && ./boot.sh > ./boot.log") | crontab - ; \
-	fi
-	chmod +x $(shell pwd)/boot.sh
-
-uninstall:
-	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -
