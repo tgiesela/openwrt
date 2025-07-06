@@ -5,3 +5,4 @@ boot.log
 !*.secret
 config/vars
 config/nordvpnvars
+config/adguard/passwd

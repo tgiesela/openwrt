@@ -1,16 +1,19 @@
 config dnsmasq
+    option port '${DNSMASQPORT}'
     option domainneeded '1'
     option localise_queries '1'
     option rebind_protection '1'
     option local "/${LAN_DOMAIN}/"
     option domain "${LAN_DOMAIN}"
     option expandhosts '1'
+    option cachesize '0'
+    option noresolv '1'
     option authoritative '${DHCP_ENABLED}'
     option readethers '1'
     option leasefile '/tmp/dhcp.leases'
     option localservice '1'
     option rebind_domain "${LAN_DOMAIN}"
-    list server "${UPSTREAM_DNS_SERVER}"
+#    list server "${UPSTREAM_DNS_SERVER}"
 
 config dhcp 'lan'
     option interface 'lan'
@@ -20,11 +23,19 @@ config dhcp 'lan'
     option dhcpv4 'server'
     option dhcpv6 '${DHCPV6_MODE}'
     option ra '${DHCPV6_MODE}'
-    option ra_flags 'managed-config'
+    option ra_flags 'managed-config'  
     option ra_flags 'other-config'
+# list of option-names: dnsmasq --help dhcp
     list dhcp_option 'option:ntp-server,${LAN_IP}'
-    list ntp '${LAN_IP6}'
-#   option ndp 'hybrid'
+    list dhcp_option 'option:router,${LAN_IP}'
+    list dhcp_option 'option:dns-server,${LAN_IP}'
+    list dhcp_option 'option:domain-name,${LAN_DOMAIN}'
+    list dhcp_option 'option:domain-search,${LAN_DOMAIN}'
+#    list dhcp_option 'option6:ntp-server,${LAN_IP6}'
+#    list dhcp_option 'option6:router,${LAN_IP6}'
+#    list dhcp_option 'option6:dns-server,${LAN_IP6}'
+# ipv6 options
+    option dns '${LAN_IP6}'
 
 config dhcp 'wan'
     option ignore       '1'

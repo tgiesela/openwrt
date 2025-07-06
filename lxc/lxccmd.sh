@@ -45,7 +45,6 @@ function start() {
     echo "CONTAINER $1 STARTED"
 }
 function attach() {
-    echo ATTACH $@
     if [ "$(exists "$1")" = "false" ]; then
         echo "Container $1 does not exist."
         return 0
@@ -57,7 +56,7 @@ function attach() {
     fi
     local name=$1
     shift 1
-    echo lxc-attach "$name" -- /bin/sh -c "$*"
+#    echo lxc-attach "$name" -- /bin/sh -c "$*"
     lxc-attach "$name" -- /bin/sh -c "$*"
 }
 help() {

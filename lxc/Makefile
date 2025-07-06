@@ -4,29 +4,21 @@ CONFIGDIR  = ../config
 GLOBALVARS = $(CONFIGDIR)/vars
 LXCVARS	   = $(CONFIGDIR)/lxcvars
 NORDVPNVARS= $(CONFIGDIR)/nordvpnvars
+ADGUARDVARS = $(CONFIGDIR)/adguardvars
 CONT_TYPE  = lxc
-include $(GLOBALVARS) $(LXCVARS)
+include ../tools/Makefile.shared
+include $(GLOBALVARS) $(LXCVARS) $(ADGUARDVARS) $(NORDVPNVARS)
 export
 
 build: buildopenwrt buildnordvpn
 
-buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config stopopenwrt | /usr/bin/lxc-create ipv6
+buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config stopopenwrt | /usr/bin/lxc-create ipv6 $(ADGUARDVARS)
 	@echo "BUILDING IMAGE $(CONTAINERWRT) AND INSTALL ADDITIONAL MODULES"
 	. $(GLOBALVARS) ; \
 	envsubst <$(CONFIGDIR)/rc.local >rc.local.mod; \
 	cp rc.local.mod $(CONTAINERROOTFS)/etc/rc.local; \
 	rm -f rc.local.mod
-# 	sed -i '/sysctl -w net.ipv6.conf/d' $(CONTAINERROOTFS)/etc/rc.local
-# 	sed -i '/exit 0/d' $(CONTAINERROOTFS)/etc/rc.local
 
-# ifeq ($(IPV6_ENABLED),true)
-# 	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
-# 	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=0" >> $(CONTAINERROOTFS)/etc/rc.local
-# else
-# 	echo "sysctl -w net.ipv6.conf.all.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
-# 	echo "sysctl -w net.ipv6.conf.default.disable_ipv6=1" >> $(CONTAINERROOTFS)/etc/rc.local
-# endif
-# 	echo "exit 0" >> $(CONTAINERROOTFS)/etc/rc.local
 	#	Copy configuration files
 	for file in $(CONFIGDIR)/openwrt/*; do \
 		envsubst <$${file} >$${file}.mod; \
@@ -36,6 +28,12 @@ buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config
 			cp $${file}.mod $(CONTAINERROOTFS)/etc/config/$$(basename $${file}); \
 		fi; \
 	done
+
+	ADGUARDCONF=$(CONFIGDIR)/adguard/adguardhome.yaml; \
+	envsubst <$${ADGUARDCONF} >$${ADGUARDCONF}.mod; \
+	cp $${ADGUARDCONF}.mod $(CONTAINERROOTFS)/etc/$$(basename $${ADGUARDCONF}); 
+
+	rm -f $${ADGUARDCONF}.mod
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 
 	./lxccmd.sh start $(CONTAINERWRT) 
@@ -60,8 +58,18 @@ runopenwrt: openwrt/runconfig $(CONTAINERLOC)$(CONTAINERWRT)
 	ip l set ${LAN_PARENT} promisc on
 	./lxccmd.sh start $(CONTAINERWRT)
 	$(WIFI_SCRIPT) add
-	sleep 10
-	./lxccmd.sh attach $(CONTAINERWRT) "service uhttpd restart"
+	RSLT=$$(./lxccmd.sh attach $(CONTAINERWRT) "netstat -lnp|grep $(LAN_IP):80"); \
+	echo RSLT=$${RSLT}
+	while [ -z "$$RSLT" ]; do \
+		echo "Waiting for uhttpd to start..."; \
+		sleep 1; \
+		./lxccmd.sh attach $(CONTAINERWRT) "service uhttpd restart"; \
+		RSLT=$$(./lxccmd.sh attach $(CONTAINERWRT) "netstat -lnp|grep $(LAN_IP):80"); \
+	done
+
+	# sleep 12
+	# ./lxccmd.sh attach $(CONTAINERWRT) "/etc/init.d/uhttpd stop" || true
+	# ./lxccmd.sh attach $(CONTAINERWRT) "/etc/init.d/uhttpd restart"
 
 runnordvpn: $(CONTAINERVPNLOC)$(CONTAINERVPN) 
 	@echo "STARTING CONTAINER $(CONTAINERVPN)"
@@ -160,13 +168,3 @@ iptables:
 	iptables -I  DOCKER-USER -o lxcbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 	iptables -t nat -I POSTROUTING -s 10.0.3.0/24 -o $(LAN_PARENT) -j MASQUERADE
 	iptables -P FORWARD ACCEPT
-
-install:
-	LINE=$(shell crontab -l | grep -c "$(shell pwd)/boot.sh"); \
-	if [ "$${LINE}" -eq 0 ]; then \
-		(crontab -l; echo "@reboot cd $(shell pwd) && ./boot.sh > ./boot.log") | crontab - ; \
-	fi
-	chmod +x $(shell pwd)/boot.sh
-
-uninstall:
-	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -

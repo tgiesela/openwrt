@@ -41,7 +41,8 @@ export UPSTREAM_DNS_SERVER=8.8.8.8
 
 export OPENWRT_LOCAL_IP=${CNTNETWORKPREFIX}.49
 export OPENWRT_LOCAL_GATEWAY=${CNTNETWORKPREFIX}.50
-export LAN_IP6_ULA=$( [ "$IPV6_ENABLED" = "true" ] &&  echo 'fd00:192:168:56::1/64' || echo  '')
+export LAN_IP6="fd00:10:56:57::1"
+export LAN_IP6_ULA=$( [ "$IPV6_ENABLED" = "true" ] &&  echo "${LAN_IP6}/64" || echo "")
 
 export LAN_DRIVER=macvlan
 export LAN_PARENT=eth0
