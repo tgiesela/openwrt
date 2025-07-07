@@ -41,7 +41,7 @@ export UPSTREAM_DNS_SERVER=8.8.8.8
 
 export OPENWRT_LOCAL_IP=${CNTNETWORKPREFIX}.49
 export OPENWRT_LOCAL_GATEWAY=${CNTNETWORKPREFIX}.50
-export LAN_IP6="fd00:10:56:57::1"
+export LAN_IP6='fd00:10:56:57::1'
 export LAN_IP6_ULA=$( [ "$IPV6_ENABLED" = "true" ] &&  echo "${LAN_IP6}/64" || echo "")
 
 export LAN_DRIVER=macvlan
@@ -55,7 +55,7 @@ export WAN_PARENT=eth1
 
 export WIFI_ENABLED=true
 
-#WIFI_IFACES="wlan0 wlan1"
+#export WIFI_IFACES="wlan0;wlan1"
 export WIFI_IFACES=wlan0
 export WIFI_CHANNEL_wlan0=48
 export WIFI_SSID_wlan0=<your_wifi_ssid>
@@ -76,6 +76,5 @@ export LOCALNETWORKS="${CNTNETWORK};${LAN_SUBNET}"
 
 export VPNVOLUME=/dockerdata/nordvpn
 
-export WIFI_SCRIPT=../tools/addwifi.sh
 # Example to bypass VPN for a specific IP
 export VPN_BYPASS_IP=${LAN_PREFIX}.159

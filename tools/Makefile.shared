@@ -1,3 +1,13 @@
+WIFI_SCRIPT=../tools/addwifi.sh
+CONFIGDIR  = ../config
+GLOBALVARS = $(CONFIGDIR)/vars
+LXCVARS	   = $(CONFIGDIR)/lxcvars
+DOCKERVARS = $(CONFIGDIR)/dockervars
+NORDVPNVARS= $(CONFIGDIR)/nordvpnvars
+ADGUARDVARS= $(CONFIGDIR)/adguardvars
+include $(GLOBALVARS) $(ADGUARDVARS) $(NORDVPNVARS)
+
+
 $(ADGUARDVARS):
 	@echo "Generating adGuard user-id password"
 	apt update && apt install -y apache2-utils

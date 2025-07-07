@@ -39,7 +39,8 @@ function addAdapters(){
     rm -f ${STORE}
     rm -f ${WIRELESSCONFIG}
     export counter=0
-    for adapter in ${WIFI_IFACES}; do
+    IFS=';' read -ra IFACE <<< "${WIFI_IFACES}"
+    for adapter in "${IFACE[@]}"; do
         echo ADDING "${adapter}"
         DEVINFO=$(udevadm info /sys/class/net/"${adapter}")
         local WIFI_DEV
@@ -106,7 +107,8 @@ function attemptRename(){
     fi
 }
 function removeAdapters(){
-    for adapter in ${WIFI_IFACES}; do
+    IFS=';' read -ra IFACE <<< "${WIFI_IFACES}"
+    for adapter in "${IFACE[@]}"; do
         echo RETURNING "${adapter}"
         ISUSB=$(grep "${adapter}-usbid" ${STORE})
         attemptRename "${adapter}"
