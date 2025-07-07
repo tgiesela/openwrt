@@ -1,13 +1,8 @@
 .PHONY: build clean stop FORCE
 .ONESHELL:
-CONFIGDIR  = ../config
-GLOBALVARS = $(CONFIGDIR)/vars
-LXCVARS	   = $(CONFIGDIR)/lxcvars
-NORDVPNVARS= $(CONFIGDIR)/nordvpnvars
-ADGUARDVARS = $(CONFIGDIR)/adguardvars
 CONT_TYPE  = lxc
 include ../tools/Makefile.shared
-include $(GLOBALVARS) $(LXCVARS) $(ADGUARDVARS) $(NORDVPNVARS)
+include $(LXCVARS)
 export
 
 build: buildopenwrt buildnordvpn
@@ -57,7 +52,9 @@ runopenwrt: openwrt/runconfig $(CONTAINERLOC)$(CONTAINERWRT)
 	@echo "STARTING CONTAINER $(CONTAINERWRT)"
 	ip l set ${LAN_PARENT} promisc on
 	./lxccmd.sh start $(CONTAINERWRT)
-	$(WIFI_SCRIPT) add
+ifeq ($(WIFI_ENABLED),true)
+	. $(GLOBALVARS) && $(WIFI_SCRIPT) add
+endif
 	RSLT=$$(./lxccmd.sh attach $(CONTAINERWRT) "netstat -lnp|grep $(LAN_IP):80"); \
 	echo RSLT=$${RSLT}
 	while [ -z "$$RSLT" ]; do \
@@ -94,7 +91,9 @@ stop: stopopenwrt stopnordvpn
 
 stopopenwrt:
 	./lxccmd.sh stop $(CONTAINERWRT)
-	$(WIFI_SCRIPT) remove
+ifeq ($(WIFI_ENABLED),true)
+	. $(GLOBALVARS) && $(WIFI_SCRIPT) remove
+endif
 
 stopnordvpn:
 	@echo "DISCONNECTING NORDVPN CONTAINER $(CONTAINERVPN)"

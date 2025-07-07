@@ -1,14 +1,8 @@
 .PHONY: build clean container createnetwork run removenetworks
 .ONESHELL:
-CONFIGDIR  = ../config
-DOCKERVARS = $(CONFIGDIR)/dockervars
-GLOBALVARS = $(CONFIGDIR)/vars
-ADGUARDVARS = $(CONFIGDIR)/adguardvars
 CONT_TYPE = docker
 include ../tools/Makefile.shared
 include $(DOCKERVARS) 
-include $(GLOBALVARS)
-include $(ADGUARDVARS)
 export
 TMPOPENWRT:=openwrt/tmp
 TMPNORDVPN:=nordvpn/tmp
@@ -45,9 +39,8 @@ run: build.target /usr/sbin/iw
 	ip l set ${LAN_PARENT} promisc on
 	ip l set ${WAN_PARENT} promisc on
 	docker compose up -d
-#	docker exec -it $(CONTAINERWRT) /bin/sh -c "/etc/init.d/pbr enable"
 ifeq ($(WIFI_ENABLED),true)
-	$(WIFI_SCRIPT) add
+	. $(GLOBALVARS) && $(WIFI_SCRIPT) add
 endif
 	sleep 10
 	docker network connect ${WAN_NETWORK} $(CONTAINERWRT)
@@ -76,7 +69,7 @@ stop:
 	docker compose stop || exit $$?
 	rm -rf /run/netns/$(CONTAINERWRT)
 ifeq ($(WIFI_ENABLED),true)
-	$(WIFI_SCRIPT) remove
+	. $(GLOBALVARS) && $(WIFI_SCRIPT) remove
 endif
 
 clean: stop removecontainer
