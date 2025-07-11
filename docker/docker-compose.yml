@@ -51,9 +51,8 @@ services:
         ipv4_address: ${VPN_IP}
         interface_name: cnt-br0
       ow-wan:
+        interface_name: eth0
     dns: ${OPENWRT_LOCAL_IP}
-    ports:
-      - "2223:22" # SSH nordvpn
     environment:
      - TZ=Europe/Amsterdam
      - CNTNETWORKPREFIX=${CNTNETWORKPREFIX}
