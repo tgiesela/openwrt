@@ -38,12 +38,13 @@ run: build.target /usr/sbin/iw
 	@echo "STARTING SERVICES"
 	ip l set ${LAN_PARENT} promisc on
 	ip l set ${WAN_PARENT} promisc on
-	docker compose up -d
+	docker compose start
 ifeq ($(WIFI_ENABLED),true)
 	. $(GLOBALVARS) && $(WIFI_SCRIPT) add
 endif
 	sleep 10
-	docker network connect ${WAN_NETWORK} $(CONTAINERWRT)
+	docker network connect ${WAN_NETWORK} $(CONTAINERWRT) || true
+#	docker network connect ${WAN_NETWORK} $(CONTAINERVPN)
 	RSLT=$$(docker exec $(CONTAINERWRT) /bin/sh -c "netstat -lnp|grep $(LAN_IP):80"); \
 	while [ -z "$$RSLT" ]; do \
 		echo "Waiting for uhttpd to start..."; \
@@ -51,6 +52,8 @@ endif
 		docker exec $(CONTAINERWRT) /bin/sh -c "service uhttpd restart"; \
 		RSLT=$$(docker exec $(CONTAINERWRT) /bin/sh -c "netstat -lnp|grep $(LAN_IP):80"); \
 	done
+	docker exec $(CONTAINERVPN) /bin/sh -c "ip r del default dev eth0"
+	docker exec $(CONTAINERVPN) /bin/sh -c "dhclient eth0"
 
 # sleep 8
 
