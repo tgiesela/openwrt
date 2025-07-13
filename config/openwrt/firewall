@@ -24,6 +24,13 @@ config zone
 	list network 'wan6'
 	list network 'novpn'
 
+config zone
+        option name 'wlan'
+        option input 'ACCEPT'
+        option output 'ACCEPT'
+        option forward 'ACCEPT'
+        list network 'wlan'
+
 config forwarding
 	option src 'lan'
 	option dest 'wan'
@@ -126,3 +133,14 @@ config rule
 	option proto 'udp'
 	option target 'ACCEPT'
 
+config forwarding
+    option src 'wlan'
+    option dest 'lan'
+
+config forwarding
+    option src 'wlan'
+    option dest 'wan'
+
+config forwarding
+    option src 'lan'
+    option dest 'wlan'

@@ -67,6 +67,18 @@ config device
 config device
     option name 'eth1'
 
+config interface 'wlan'
+    option proto 'static'
+    option device 'br-wlan'
+	option ipaddr '${WLAN_IP}'
+	option netmask '255.255.255.0'
+
+config device
+    option type 'bridge'
+    option name 'br-wlan'
+	option bridge_empty '1'
+    option ipv6 '${OPENWRT_IPV6_ENABLED}'
+
 config route
     option target '0.0.0.0/0'
     option gateway '${VPN_IP}'

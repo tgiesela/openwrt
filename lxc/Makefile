@@ -46,7 +46,7 @@ buildnordvpn: $(CONTAINERVPNROOTFS) nordvpn/runconfig | /usr/bin/lxc-create ipv6
 
 	touch buildnordvpn
 
-run: runnordvpn runopenwrt
+run: runnordvpn runopenwrt setupshim
 
 runopenwrt: openwrt/runconfig $(CONTAINERLOC)$(CONTAINERWRT)
 	@echo "STARTING CONTAINER $(CONTAINERWRT)"
@@ -87,7 +87,7 @@ cleannordvpn: stopnordvpn
 	rm -rf $(CONTAINERVPNROOTFS)
 	rm -rf buildnordvpn
 
-stop: stopopenwrt stopnordvpn
+stop: stopopenwrt stopnordvpn removeshim
 
 stopopenwrt:
 	./lxccmd.sh stop $(CONTAINERWRT)

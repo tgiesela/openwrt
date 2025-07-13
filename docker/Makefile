@@ -34,7 +34,7 @@ build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docke
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 	touch build.target
 
-run: build.target /usr/sbin/iw
+run: build.target /usr/sbin/iw setupshim
 	@echo "STARTING SERVICES"
 	ip l set ${LAN_PARENT} promisc on
 	ip l set ${WAN_PARENT} promisc on
@@ -67,7 +67,7 @@ openwrt/$(OPENWRTIMAGE):$(GLOBALVARS)
 removecontainer:
 	docker compose down
 
-stop:
+stop: removeshim
 	docker network disconnect ${WAN_NETWORK} $(CONTAINERWRT)
 	docker compose stop || exit $$?
 	rm -rf /run/netns/$(CONTAINERWRT)
