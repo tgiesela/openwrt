@@ -97,8 +97,8 @@ networks:
   vpnnet:
     name: vpnnet
     driver: bridge
-    # driver_opts:
-    #   com.docker.network.driver.mtu: 1420
+    driver_opts:
+      com.docker.network.driver.mtu: 1420
     enable_ipv6: ${IPV6_ENABLED}
     ipam:
       config:

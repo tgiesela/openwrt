@@ -42,6 +42,7 @@ function addAdapters(){
     IFS=';' read -ra IFACE <<< "${WIFI_IFACES}"
     for adapter in "${IFACE[@]}"; do
         echo ADDING "${adapter}"
+        export adapter
         DEVINFO=$(udevadm info /sys/class/net/"${adapter}")
         local WIFI_DEV
         WIFI_DEV=$(cat /sys/class/net/"${adapter}"/phy80211/name)
@@ -84,8 +85,9 @@ function addAdapters(){
        
         counter=$((counter + 1))
         export WIFI_RADIO=${counter}
-        envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}       
+        envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}
     done
+    chmod +x ../tools/uciupdatewifi.sh
     if [ "${CONT_TYPE}" == "docker" ] ; then
         docker cp ${WIRELESSCONFIG} "${CONTAINERWRT}":/etc/config/wireless
     elif [ "${CONT_TYPE}" == "lxc" ] ; then
@@ -94,6 +96,7 @@ function addAdapters(){
         echo "Unknown container type: ${CONT_TYPE}"
         exit 1
     fi
+    rm -f wlan.conf
 }
 function attemptRename(){
     adapter=$1
