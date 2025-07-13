@@ -48,6 +48,7 @@ You need to configure one network adapter to get access to your machine. I reser
 
 ### Wireless adapters
 You can configure multiple WiFi-adapters to use in Openwrt. They will be moved into the network namespace of the docker/lxc containers. This is also the reason why the autostart feature of docker and lxc do not work, because on restart the Wifi-adapters are not automatically moved to the containers. This is achieved by running the 'make run' command, which starts the 'addwifi.sh' script.
+Note: wireless adapters will be added to a separate network (wlan) with its own ip-addresses. If we don't do that, we cannot access devices in the wired network from the wifi-network and vice versa. This is caused by issues with ARP responses which do not arrive at the requestor of ARP request. I don't understand exactly why, but probably this is due to the fact that routing ARP response is different from routing of IP.
 
 ## Install Docker version
 You must have docker installed before you can continue with installation.
