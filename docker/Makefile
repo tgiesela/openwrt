@@ -30,6 +30,8 @@ build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docke
 	envsubst <$${ADGUARDCONF} >$${ADGUARDCONF}.mod; \
 	docker cp $${ADGUARDCONF}.mod $(CONTAINERWRT):/etc/$$(basename $${ADGUARDCONF}); 
 
+	docker cp $(CONFIGDIR)/forward.ports $(CONTAINERVPN):/
+
 	rm -f $${ADGUARDCONF}.mod
 	rm -rf $(CONFIGDIR)/openwrt/*.mod
 	touch build.target
@@ -44,7 +46,6 @@ ifeq ($(WIFI_ENABLED),true)
 endif
 	sleep 10
 	docker network connect ${WAN_NETWORK} $(CONTAINERWRT) || true
-#	docker network connect ${WAN_NETWORK} $(CONTAINERVPN)
 	RSLT=$$(docker exec $(CONTAINERWRT) /bin/sh -c "netstat -lnp|grep $(LAN_IP):80"); \
 	while [ -z "$$RSLT" ]; do \
 		echo "Waiting for uhttpd to start..."; \
@@ -54,6 +55,7 @@ endif
 	done
 	docker exec $(CONTAINERVPN) /bin/sh -c "ip r del default dev eth0"
 	docker exec $(CONTAINERVPN) /bin/sh -c "dhclient eth0"
+	docker exec $(CONTAINERVPN)	/bin/sh -c "ip r add $(LAN_SUBNET) via $(OPENWRT_LOCAL_IP)"
 
 # sleep 8
 

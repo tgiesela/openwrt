@@ -23,11 +23,6 @@ services:
       vpnnet:
         interface_name: cnt-br0
     dns: 127.0.0.1
-    ports:
-      - "2222:22" # SSH
-      - "80:80" # HTTP Luci
-      - "443:443" # HTTPS Luci
-      - "${ADGUARDHTTPPORT}:${ADGUARDHTTPPORT}" # AdGuard Home
     volumes:
       - /dockerdata/openwrt:/etc/openwrt
     logging: *default-logging

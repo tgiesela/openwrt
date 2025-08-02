@@ -43,6 +43,7 @@ buildnordvpn: $(CONTAINERVPNROOTFS) nordvpn/runconfig | /usr/bin/lxc-create ipv6
 	sleep 10
 	./lxccmd.sh attach $(CONTAINERVPN) "cd /home/scripts/ && ./install.sh"
 	./lxccmd.sh stop $(CONTAINERVPN)
+	cp $(CONFIGDIR)/forward.ports $(CONTAINERVPNROOTFS)/ 
 
 	touch buildnordvpn
 
@@ -74,7 +75,10 @@ runnordvpn: $(CONTAINERVPNLOC)$(CONTAINERVPN)
 	./lxccmd.sh start $(CONTAINERVPN)
 	sleep 5
 	./lxccmd.sh attach $(CONTAINERVPN) "cd /home/scripts/ && ./start.sh"
-
+	./lxccmd.sh attach $(CONTAINERVPN) "ip r del default dev eth0"
+	./lxccmd.sh attach $(CONTAINERVPN) "dhclient eth0"
+	./lxccmd.sh attach $(CONTAINERVPN) "ip r add $(LAN_SUBNET) via $(OPENWRT_LOCAL_IP)"
+	
 clean:cleanopenwrt cleannordvpn
 
 cleanopenwrt: stopopenwrt
