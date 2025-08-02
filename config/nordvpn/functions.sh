@@ -44,7 +44,7 @@ enableForwarding(){
     subnetNORDVPN=$(ip -o -f inet addr show nordlynx | awk '{print $4;}'|sed 's/\/32/\/16/')
     IFS=';' read -ra ADDR <<< "$NETWORK"
     for i in "${ADDR[@]}"; do
-       echo "Adding $i to whitelist"
+       info "Adding $i to whitelist"
        iptables -I FORWARD -i nordlynx -o eth0+ -s "$subnetNORDVPN" -d ${i} -m conntrack --ctstate NEW -j ACCEPT;
        nordvpn whitelist add subnet "${i}"
     done
@@ -54,11 +54,21 @@ enableForwarding(){
 
 # To allow forwarding of DNS requests from other containers
     iptables -t nat -A POSTROUTING -s "${CNTNETWORK}" -o eth+ -j MASQUERADE
+
+# Forward ports for remote access
+    input="/forward.ports"
+    while IFS= read -r line
+    do
+        if [[ $line != \#* ]]; then
+            info Processing "$line"
+            ./forward.sh $line
+        fi
+    done < "$input"
 }
 
 appStart() {
     [ -f /.alreadysetup ] && echo "Skipping setup..." || appSetup
-    echo "[INFO] start"
+    info "start"
 
     trap "appStop" SIGTERM
     trap "appStop" SIGINT
@@ -70,12 +80,14 @@ appStart() {
     done
     nordvpn set analytics off # Disable analytics to prevent leaks
     nordvpn logout --persist-token
-    echo "LOGGING IN"
+}
+appConnect() {
+    info "LOGGING IN"
     nordvpn login --token "${TOKEN}"
 
     IFS=';' read -ra ADDR <<< "$LOCALNETWORKS"
     for i in "${ADDR[@]}"; do
-       echo "Adding $i to whitelist"
+       info "Adding $i to whitelist"
        nordvpn whitelist add subnet "${i}"
     done
 
@@ -92,20 +104,44 @@ appStart() {
         nordvpn mesh set nickname "${NORDVPNNICKNAME}" || true
     fi
 }
+appDisconnect() {
+    info "Disconnecting"
+    nordvpn disconnect
+}
 appStop() {
     info "Stopping"
     nordvpn logout --persist-token
     nordvpn disconnect
 }
 monitorVpn() {
-    echo "START" > ./wantedstate
+    echo "CONNECTED" > ./wantedstate
     info "Starting monitor"
+    appStart
     WANTEDSTATE=$(cat ./wantedstate 2> /dev/null)
     while [ "${WANTEDSTATE}" != "STOP" ] && [ "$WANTEDSTATE" != "STOPPED" ] ; do
-        if ! nordvpn status | grep -q "Connected"; then
-            echo "NordVPN is not connected, attempting to reconnect..."
-            appStart
-        fi
+        case "${WANTEDSTATE}" in
+            "CONNECTED")
+                if ! nordvpn status | grep -q "Connected"; then
+                    info "NordVPN is not connected, attempting to reconnect..."
+                    appConnect
+                fi
+                ;;
+            "DISCONNECTED")
+                if ! nordvpn status | grep -q "Disonnected"; then
+                    info "NordVPN is still connected, attempting to disconnect..."
+                    appDisconnect
+                fi
+                ;;
+            "STOP")
+                info "Nordvpn logout..."
+                appStop
+                ;;
+            *)
+                info "Unknown state: ${WANTEDSTATE}"
+                exit 1
+                ;;
+        esac
+        
         sleep 10
         WANTEDSTATE=$(cat ./wantedstate 2>/dev/null)
     done

@@ -12,10 +12,29 @@ function addrule(){
     iptables -t nat -D $RULE || true
     iptables -t nat -A $RULE
 }
-cat /etc/resolv.conf
+function isip(){
+    local IP="$1"
+    local TEST=$(echo "${IP}" | grep -E "^([0-9]{1,3}\.){3}([0-9]{1,3})$")
+
+    if [[ "$TEST" == "$IP" ]] ; then
+        IFS='.' read -ra DIGITS <<< "$TEST"
+        for digit in "${DIGITS[@]}"; do
+            if [ ! "$digit" -ge 0 ] ||  [ ! "$digit" -le 255  ] ; then 
+                echo 0
+                break
+            fi
+        done
+        echo 1
+    else
+        echo 0
+    fi    
+}
+#cat /etc/resolv.conf
 SRCPORT=$1
 TARGET=$2
 DSTPORT=$3
+
+echo "Attempt to forward port $SRCPORT to $TARGET:$DSTPORT"
 
 SRCPORTPROTOCOL=$(echo "$SRCPORT" | awk '{split($0,a,"/"); print a[1], a[2]==""?"tcp":a[2]}')
 DSTPORTPROTOCOL=$(echo "$DSTPORT" | awk '{split($0,a,"/"); print a[1], a[2]==""?"tcp":a[2]}')
@@ -23,11 +42,18 @@ SRCPORTARR=($SRCPORTPROTOCOL)
 DSTPORTARR=($DSTPORTPROTOCOL)
 
 # Always use dockers DNS to resolve hostnames
-TARGETIP=$(dig +short @127.0.0.11 "${TARGET}")
-if [ -z "$TARGETIP" ] ; then
-    echo "Can't resolve hostname ${TARGET}"
-    exit 2
+VALIDIP=$(isip "${TARGET}")
+echo "$TARGET is valid: $VALIDIP"
+if [[ "${VALIDIP}" == "1" ]] ; then
+    TARGETIP="${TARGET}"
+else
+    TARGETIP=$(dig +short @127.0.0.11 "${TARGET}")
+    if [ -z "$TARGETIP" ] ; then
+        echo "Can't resolve hostname ${TARGET}"
+        exit 2
+    fi
 fi
+
 # Always use dockers DNS to resolve hostnames
 MYIP=$(dig +short @127.0.0.11 $(hostname))
 echo "Adding port forwarding from :${SRCPORT} to ${TARGET}:${DSTPORT}"

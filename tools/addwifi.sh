@@ -87,7 +87,7 @@ function addAdapters(){
         export WIFI_RADIO=${counter}
         envsubst < "${CONFIGDIR}"/openwrt/wireless.tpl >> ${WIRELESSCONFIG}
     done
-    chmod +x ../tools/uciupdatewifi.sh
+#    chmod +x ../tools/uciupdatewifi.sh
     if [ "${CONT_TYPE}" == "docker" ] ; then
         docker cp ${WIRELESSCONFIG} "${CONTAINERWRT}":/etc/config/wireless
     elif [ "${CONT_TYPE}" == "lxc" ] ; then

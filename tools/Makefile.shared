@@ -27,10 +27,10 @@ uninstall:
 	(crontab -l | sed  'd#@reboot cd $(shell pwd) && ./boot.sh/#')|crontab -
 
 setupshim:
-	ip link add owlan-shim link eth0 type macvlan mode bridge
-	ip addr add $(LAN_PREFIX).1/32 dev owlan-shim
-	ip link set owlan-shim up
-	ip route add $(LAN_SUBNET) dev owlan-shim
+	ip link add owlan-shim link eth0 type macvlan mode bridge || true
+	ip addr add $(LAN_PREFIX).1/32 dev owlan-shim || true
+	ip link set owlan-shim up || true
+	ip route add $(LAN_SUBNET) dev owlan-shim || true
 
 removeshim:
 	ip link del owlan-shim || true

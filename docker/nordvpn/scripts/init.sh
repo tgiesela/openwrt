@@ -19,7 +19,7 @@ appStartDaemon() {
     done
     info "Starting monitor"
     chmod +x ./monitor.sh
-    nohup ./monitor.sh > monitor.out 2>&1 & 
+    nohup ./monitor.sh 2>&1 & 
 #    tail -f /entrypoint.sh
     wait ${DAEMON_PID}
     echo "Wait completed"
