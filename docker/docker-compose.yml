@@ -32,6 +32,7 @@ services:
       - NET_ADMIN
       - NET_RAW
       - SYS_MODULE
+      - SYS_TIME
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=${SYSCTL_IPV6_DISABLED}
       - net.ipv6.conf.default.disable_ipv6=${SYSCTL_IPV6_DISABLED}

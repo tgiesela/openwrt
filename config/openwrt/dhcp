@@ -78,3 +78,16 @@ config domain
 config domain
     option name 'tvhome'
     option ip '${VPN_BYPASS_IP}'
+
+config domain
+    option name 'nasnew'
+    option ip '${LAN_PREFIX}.203'
+
+config host
+    list mac '2C:CF:67:0E:9E:8C'
+    option ip '${LAN_PREFIX}.203'
+
+config host
+    option name 'tvhome'
+    option ip '${VPN_BYPASS_IP}'
+    list mac 'D8:3A:DD:DE:4D:FF'
