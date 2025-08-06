@@ -47,7 +47,7 @@ echo "$TARGET is valid: $VALIDIP"
 if [[ "${VALIDIP}" == "1" ]] ; then
     TARGETIP="${TARGET}"
 else
-    TARGETIP=$(dig +short @127.0.0.11 "${TARGET}")
+    TARGETIP=$(dig +short @${LAN_IP} "${TARGET}" | tail -n1)
     if [ -z "$TARGETIP" ] ; then
         echo "Can't resolve hostname ${TARGET}"
         exit 2
@@ -55,7 +55,7 @@ else
 fi
 
 # Always use dockers DNS to resolve hostnames
-MYIP=$(dig +short @127.0.0.11 $(hostname))
+MYIP=$(dig +short @${LAN_IP} $(hostname) | tail -n1)
 echo "Adding port forwarding from :${SRCPORT} to ${TARGET}:${DSTPORT}"
 # To avoid duplicate delete old rules first
 set +e
