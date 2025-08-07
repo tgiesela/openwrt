@@ -10,6 +10,7 @@ build: buildopenwrt buildnordvpn
 buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config stopopenwrt | /usr/bin/lxc-create ipv6 $(ADGUARDVARS)
 	@echo "BUILDING IMAGE $(CONTAINERWRT) AND INSTALL ADDITIONAL MODULES"
 	. $(GLOBALVARS) ; \
+	. $(ADGUARDVARS) ; \
 	envsubst <$(CONFIGDIR)/rc.local >rc.local.mod; \
 	cp rc.local.mod $(CONTAINERROOTFS)/etc/rc.local; \
 	rm -f rc.local.mod
@@ -24,6 +25,7 @@ buildopenwrt: $(CONTAINERROOTFS) openwrt/runconfig $(CONTAINERROOTFS)/etc/config
 		fi; \
 	done
 
+	. $(ADGUARDVARS) ; \
 	ADGUARDCONF=$(CONFIGDIR)/adguard/adguardhome.yaml; \
 	envsubst <$${ADGUARDCONF} >$${ADGUARDCONF}.mod; \
 	cp $${ADGUARDCONF}.mod $(CONTAINERROOTFS)/etc/$$(basename $${ADGUARDCONF}); 
