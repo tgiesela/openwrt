@@ -9,7 +9,7 @@ TMPNORDVPN:=nordvpn/tmp
 
 build: build.target /usr/bin/docker
 
-build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPNORDVPN) | $(ADGUARDVARS)
+build.target:openwrt/$(OPENWRTIMAGE) openwrt/Dockerfile nordvpn/Dockerfile docker-compose.yml $(TMPNORDVPN) $(TMPOPENWRT) | $(ADGUARDVARS)
 	@echo "BUILDING SERVICES"
 	docker compose build || exit $$?
 	docker compose create || exit $$?
